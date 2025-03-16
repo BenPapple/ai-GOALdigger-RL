@@ -25,6 +25,7 @@ module goaldiggerInit {
 	if true then insert(activateNormHandling).
 	% switch for task chooser choiceRandom/choiceMinimum/choiceMaximum/choiceQL
 	if true then insert(choiceRandom).
+	if true then insert(tableQL(0,0,0)).
 	
 	% global values
 	% limits the tasks by remaining steps (Task1Limit,Task2Limit,Task3Limit,Task4Limit)

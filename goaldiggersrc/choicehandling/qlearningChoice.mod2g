@@ -1,0 +1,48 @@
+use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
+use "../taskhandling/preferTwoTask" as module.
+use "../taskhandling/preferThreeTask" as module.
+use "../taskhandling/preferFourTask" as module.
+use "../choicehandling/randomChoice" as module.
+
+/**
+ * Picks a task through q-learning from the available tasks.
+ *
+ * @author Ben G.
+ */
+ 
+ module qlearningChoice {	
+
+    % use random chooser for the frirst 300 steps
+	if bel(submitterLeader),
+	   bel(waitBeforeNewTask(0)),
+	   bel(mapGoalZone(_,_,_)),
+	   percept(step(StepX), StepX =< 300)
+	    then randomChoice.
+
+    % use random chooser while nothing learned yet
+	if bel(submitterLeader),
+	   bel(waitBeforeNewTask(0)),
+	   bel(mapGoalZone(_,_,_)),
+	   bel(tableQL(0,0,0)),
+	   percept(step(StepX), StepX > 300)
+	    then randomChoice.
+
+    % use highest Q value for prferred task picking		
+	if bel(submitterLeader),
+	   bel(waitBeforeNewTask(0)),
+	   bel(mapGoalZone(_,_,_)),
+	   bel(tableQL(V1,V2,V3)),
+	   not(bel(tableQL(0,0,0))),
+	   percept(step(StepX), StepX > 300)
+	    then {
+	    if bel(currentChosenTask(_, _, _, _, _, _, needNewTask, needNewTask)),
+	       bel(V1 >= V2, V1 >= V3) then preferTwoTask + exit-module.
+	    if  bel(currentChosenTask(_, _, _, _, _, _, needNewTask, needNewTask)),
+	        bel(V2 >= V1, V2 >= V3) then preferThreeTask + exit-module.
+	    if bel(currentChosenTask(_, _, _, _, _, _, needNewTask, needNewTask)),
+	        bel(V3 >= V1, V3 >= V2)
+	        then preferFourTask + exit-module.	    
+	}	
+	
+}

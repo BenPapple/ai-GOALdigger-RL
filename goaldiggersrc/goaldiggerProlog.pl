@@ -41,6 +41,10 @@
 :- dynamic choiceRandom/0.
 :- dynamic choiceMinimum/0.
 :- dynamic choiceMaximum/0.
+:- dynamic choiceQL/0.
+
+% Q-learning variables
+:- dynamic tableQL/3.
 
 % when a marked is north of agent.
 :- dynamic northExplored/0.
@@ -233,6 +237,14 @@
 % MACHINEL LEARNING VARs
 :- dynamic qtable/6.
 :- dynamic randomTaskChoser/1.
+
+% calculate new Q values
+calculateQ(OldQ, LearningRate, Reward, DiscountFactor, NewQ) :- 
+                                       Part1 is OldQ,
+		                       Part2 is DiscountFactor * Reward,
+		                       Part3 is Reward + Part2 - OldQ,
+                                       Part4 is LearningRate * Part3,
+    	                               NewQ is Part1 + Part4.
 
 recoverEnergy(OldEnergy, RecoveredEnergy, NewEnergy) :-
 	(NewEnergy is OldEnergy + RecoveredEnergy, NewEnergy =< 100);

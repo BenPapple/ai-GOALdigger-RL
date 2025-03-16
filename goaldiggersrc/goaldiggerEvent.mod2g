@@ -32,6 +32,7 @@ use "./taskhandling/changeTaskCheck" as module.
 use "./taskhandling/manageCustomQtable" as module.
 use "./normhandling/analyzeNorms" as module.
 use "./blockhandling/dropOnDisappearedGZ" as module.
+use "./choicehandling/manageQtable" as module.
 
 /**
  * Gets executed everytime a percept or message is received and handles them
@@ -132,6 +133,9 @@ module goaldiggerEvent {
 	% SUBMODULE manage saboteur-specific events
 	if bel(customRole(customRoleSaboteur))
 	  then manageSaboteurEvents.
+	  
+	% as submitterLeader calculate q-table
+    if bel(submitterLeader, choiceQL) then manageQtable.
 
     % as submitterLeader calculate q-table
     if bel(submitterLeader) then manageCustomQtable.
@@ -258,7 +262,7 @@ module goaldiggerEvent {
 	   percept(steps(MaxStep), EndStep is MaxStep, SimStep < EndStep)
 	   	then delete(haveMove).
 	
-	/* Ablauf in der Simulation verlangsamen - auskommentieren für Turniere und Contest*/   	
+	/* Ablauf in der Simulation verlangsamen - auskommentieren fï¿½r Turniere und Contest*/   	
 	%if true then sleep(500). 
 
 } % module

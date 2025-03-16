@@ -1,0 +1,35 @@
+use "../goaldiggerProlog" as knowledge.
+
+/**
+ * calculate new q values from successful multitask submits
+ *
+ * @author Ben G.
+ */
+
+module manageQtable {
+
+	% calculate Q for 40 point tasks
+	forall (_).sent(made40Points(_)) do {
+	    if bel(tableQL(OldQ, V2, V3)),
+	       bel(calculateQ(OldQ, 0.5, 40, 0, NewQ))
+	        then delete(tableQL(OldQ,V2,V3)) +
+	             insert(tableQL(NewQ, V2, V3)).	
+	}
+
+	% calculate Q for 90 point tasks
+	forall (_).sent(made90Points(_)) do {
+	    if bel(tableQL(V1, OldQ, V3)),
+	       bel(calculateQ(OldQ, 0.5, 90, 0, NewQ))
+	        then delete(tableQL(V1,OldQ,V3)) +
+	             insert(tableQL(V1, NewQ, V3)).	
+	}
+	
+	% calculate Q for 160 point tasks
+	forall (_).sent(made160Points(_)) do {
+	    if bel(tableQL(V1, V2, OldQ)),
+	       bel(calculateQ(OldQ, 0.5, 160, 0, NewQ))
+	        then delete(tableQL(V1,V2,OldQ)) +
+	             insert(tableQL(V1,V2,NewQ)).	
+	}
+	
+} % end module

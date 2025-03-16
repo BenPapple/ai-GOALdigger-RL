@@ -4,6 +4,7 @@ use "../taskhandling/taskHandlingOneBlock" as module.
 use "../choicehandling/randomChoice" as module.
 use "../choicehandling/minimumChoice" as module.
 use "../choicehandling/maximumChoice" as module.
+use "../choicehandling/qlearningChoice" as module.
 
 /**
  * Choose task from options when having corresponding role; waterfall chosing, advanced choices come first in file: 
@@ -82,5 +83,6 @@ module chooseTask {
 	if bel(choiceRandom) then randomChoice.
 	if bel(choiceMinimum) then minimumChoice.
 	if bel(choiceMaximum) then maximumChoice.
+	if bel(choiceQL) then qlearningChoice.
 		
 } % module
