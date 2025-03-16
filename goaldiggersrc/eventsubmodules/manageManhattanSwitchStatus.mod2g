@@ -1,0 +1,50 @@
+use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
+
+/**
+ * Manages all cases to switch off Manhattan Switch targetMd(x,y,type) concerning type field
+ *
+ * @author Ben G.
+ */
+
+module manageManhattanSwitchStatus {
+	
+	% deactivate target and executeManhattan when role, targetMd and haveBlock does not match
+	if bel(executeManhattan, targetMd(_, _, dispenser)), 
+	   percept(role(default)) 
+		then delete(executeManhattan).
+	if bel(executeManhattan, targetMd(_, _, dispenser), haveBlockAttached(true, _)), 
+	   percept(role(worker)) 
+	    then delete(executeManhattan).
+	if bel(executeManhattan, targetMd(_, _, goalzone)), 
+	   percept(role(default)) 
+		then delete(executeManhattan).
+	if bel(executeManhattan, targetMd(_, _, goalzone), haveBlockAttached(false, _)), 
+	   percept(role(worker)) 
+	    then delete(executeManhattan).
+	if bel(executeManhattan, targetMd(_, _, rolezone)), 
+	   percept(role(worker)) 
+		then delete(executeManhattan).
+	
+	% deactivate to reset pos from percept to prevent recognizing wrong submitterLeader
+	if bel(executeManhattan, targetMd(_, _, supportingPosition)) 
+	    then delete(executeManhattan). 
+
+	% deactivate to reset pos from percept to prevent recognizing wrong submitterLeader
+	if bel(executeManhattan, targetMd(_, _, waitingPosition)) 
+	    then delete(executeManhattan). 
+	
+	% don't use dummy values of targetClosestGoalZone
+	if bel(haveBlockAttached(true, _), executeManhattan, targetMd(_, _, goalzone), 
+	       targetClosestGoalZone(_, _, MdAlt), MdAlt >= 123456) 
+	    then delete(executeManhattan).
+	    
+	% don't use dummy values of targetClosestRoleZone
+	if bel(executeManhattan, targetMd(_, _, rolezone), targetClosestRoleZone(_, _, MdAlt), MdAlt >= 123456) 
+	    then delete(executeManhattan).
+	
+	% when at manhattan target deactivate manhattan switch, XY same Coord
+	if bel(targetMd(X, Y, _), agentAt(X, Y, _), executeManhattan) 
+		then delete(executeManhattan).
+
+}

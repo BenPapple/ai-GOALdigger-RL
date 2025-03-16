@@ -1,0 +1,379 @@
+use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
+use "../eventsubmodules/distancecalc/updateDispenserDistance" as module.
+
+/**
+ * Use the 4-task as 4task submitterLeader
+ *
+ * @author Ben G.
+ */
+ 
+% MACRO
+define checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4) as  
+    bel(mapDispenser(_, _, dispenser, BlockTypeOther2, _, _)),
+	bel(mapDispenser(_, _, dispenser, BlockTypeOther3, _, _)),
+	bel(mapDispenser(_, _, dispenser, BlockTypeOther4, _, _)),
+    bel(storedOtherAgentStatus(OtherAgent1, _, worker, _, _, _, _, _, freeWorkerAgent)),
+	bel(confirmedOffsetOfAgent(_, _, OtherAgent1)),
+    bel(storedOtherAgentStatus(OtherAgent2, _, worker, _, _, _, _, _, freeWorkerAgent), OtherAgent1 \= OtherAgent2),  
+    bel(confirmedOffsetOfAgent(_, _, OtherAgent2)),
+    bel(storedOtherAgentStatus(OtherAgent3, _, worker, _, _, _, _, _, freeWorkerAgent), OtherAgent3 \= OtherAgent1, 
+        OtherAgent3 \= OtherAgent2),
+    bel(confirmedOffsetOfAgent(_, _, OtherAgent3)).
+
+module taskHandlingFourBlock {
+
+    % reset supporter status for multitask
+	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18, 
+	                                W19)) 
+        then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, 
+                                             W18, W19)) +
+             insert(multiTaskSupporterStatus(noTask, placeholder, placeholder, placeholder, placeholder, placeholder, 
+                                             placeholder, placeholder, placeholder, placeholder, placeholder,
+                                             placeholder, placeholder, placeholder, placeholder, placeholder, 
+                                             placeholder, placeholder, placeholder)).
+
+	% target OWN BLOCK fits
+	%
+
+	% choose 4-block tasks if it exists and own block fits with Bxxx req
+	if bel(haveBlockAttached(true, DirBlock), directionToCoordinate(DirBlock, A, B)), 
+	   percept(thing(A, B, block, BlockType1)),
+	   percept(task(TaskName ,TaskStep, 160,[req(0, 1, BlockType1),
+	           req(_, _, BlockTypeOther2),
+	           req(_, _, BlockTypeOther3),
+	           req(_, _, BlockTypeOther4)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)),	            
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+
+	% choose 4-block tasks if it exists and own block fits with xBxx req
+	if bel(haveBlockAttached(true, DirBlock), directionToCoordinate(DirBlock, A, B)), 
+	   percept(thing(A, B, block, BlockType1)),
+	   percept(task(TaskName ,TaskStep, 160,[req(_, _, BlockTypeOther2),
+	           req(0, 1, BlockType1),
+	           req(_, _, BlockTypeOther3),
+	           req(_, _, BlockTypeOther4)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)), 
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	} 
+ 
+	% choose 4-block tasks if it exists and own block fits with xxBx req
+	if bel(haveBlockAttached(true, DirBlock), directionToCoordinate(DirBlock, A, B)), 
+	   percept(thing(A, B, block, BlockType1)),
+	   percept(task(TaskName ,TaskStep, 160,[req(_, _, BlockTypeOther3),
+	           req(_, _, BlockTypeOther2),
+	           req(0, 1, BlockType1),
+	           req(_, _, BlockTypeOther4)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)), 
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+
+	% choose 4-block tasks if it exists and own block fits with xxxB req
+	if bel(haveBlockAttached(true, DirBlock), directionToCoordinate(DirBlock, A, B)), 
+	   percept(thing(A, B, block, BlockType1)),
+	   percept(task(TaskName ,TaskStep, 160,[req(_, _, BlockTypeOther4),
+	           req(_, _, BlockTypeOther2),
+	           req(_, _, BlockTypeOther3),
+	           req(0, 1, BlockType1)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)), 
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+
+	% update dispenser distance as submitterLeader
+	if not(bel(calculateNewDispenserMD)) 
+		then updateDispenserDistance.
+
+	% target closest dispenser
+	%
+	
+	% choose 4-block tasks if it exists and nearestdispenser with Bxxx req
+	if percept(task(TaskName ,TaskStep, 160,[req(0, 1, BlockType1),
+	           req(_, _, BlockTypeOther2),
+	           req(_, _, BlockTypeOther3),
+	           req(_, _, BlockTypeOther4)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)),
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   bel(targetClosestOfAllDispensersAt(_, _, BlockType1, _), BlockType1 \= bx),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+
+	% choose 4-block tasks if it exists and nearestdispenser with xBxx req
+	if percept(task(TaskName ,TaskStep, 160,[req(_, _, BlockTypeOther2),
+	           req(0, 1, BlockType1),
+	           req(_, _, BlockTypeOther3),
+	           req(_, _, BlockTypeOther4)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)), 
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   bel(targetClosestOfAllDispensersAt(_, _, BlockType1, _), BlockType1 \= bx),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) +  
+				     exit-module.
+	}
+
+
+	% choose 4-block tasks if it exists and nearestdispenser with xxBx req
+	if percept(task(TaskName ,TaskStep, 160,[req(_, _, BlockTypeOther3),
+	           req(_, _, BlockTypeOther2),
+	           req(0, 1, BlockType1),
+	           req(_, _, BlockTypeOther4)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)), 
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   bel(targetClosestOfAllDispensersAt(_, _, BlockType1, _), BlockType1 \= bx),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+
+	% choose 4-block tasks if it exists and nearestdispenser with xxxB req
+	if percept(task(TaskName ,TaskStep, 160,[req(_, _, BlockTypeOther4),
+	           req(_, _, BlockTypeOther2),
+	           req(_, _, BlockTypeOther3),
+	           req(0, 1, BlockType1)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)), 
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   bel(targetClosestOfAllDispensersAt(_, _, BlockType1, _), BlockType1 \= bx),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+
+	% target BASIC dispenser
+	%
+
+	% choose 4-block tasks if it exists and basic dispenser with Bxxx req
+	if percept(task(TaskName ,TaskStep, 160,[req(0, 1, BlockType1),
+	           req(_, _, BlockTypeOther2),
+	           req(_, _, BlockTypeOther3),
+	           req(_, _, BlockTypeOther4)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)), 
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   bel(mapDispenser(_, _, dispenser, BlockType1, _, _)),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+
+	% choose 4-block tasks if it exists and basic dispenser with xBxx req
+	if percept(task(TaskName ,TaskStep, 160,[req(_, _, BlockTypeOther2),
+	           req(0, 1, BlockType1),
+	           req(_, _, BlockTypeOther3),
+	           req(_, _, BlockTypeOther4)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)),
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   bel(mapDispenser(_, _, dispenser, BlockType1, _, _)),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+
+
+	% choose 4-block tasks if it exists and basic dispenser with xxBx req
+	if percept(task(TaskName ,TaskStep, 160,[req(_, _, BlockTypeOther3),
+	           req(_, _, BlockTypeOther2),
+	           req(0, 1, BlockType1),
+	           req(_, _, BlockTypeOther4)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)),
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   bel(mapDispenser(_, _, dispenser, BlockType1, _, _)),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+
+	% choose 4-block tasks if it exists and basic dispenser with xxxB req
+	if percept(task(TaskName ,TaskStep, 160,[req(_, _, BlockTypeOther4),
+	           req(_, _, BlockTypeOther2),
+	           req(_, _, BlockTypeOther3),
+	           req(0, 1, BlockType1)])),
+	   bel(limitStepsTask(_, _, _, Task4Limit)),
+	   bel(step(SimStep), TaskStep >= SimStep, TaskStep - SimStep >= Task4Limit),
+	   bel(mapDispenser(_, _, dispenser, BlockType1, _, _)),
+	   checkAvailableAgentsAndDispensers(BlockTypeOther2, BlockTypeOther3, BlockTypeOther4)
+	    then {
+       	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+       	                                W19)) 
+            then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, 
+                                                 W17, W18, W19))
+                 + insert(multiTaskSupporterStatus(threeTask, needsupporter, placeholder, placeholder, placeholder, 
+                                                   noack, placeholder, needsupporter, placeholder, placeholder, 
+                                                   placeholder, noack, placeholder, needsupporter, placeholder, 
+                                                   placeholder, placeholder, noack, placeholder)).
+	        if not(bel(calculateNewGoalzoneMD)) 
+	        	then insert(calculateNewGoalzoneMD).		
+			if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+				then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+				     insert(currentChosenTask(TaskName, TaskStep, 160, 0, 1, BlockType1, submittingAgentFourTask, 
+				            supporterREQPending)) + 
+				     exit-module.
+	}
+	
+} % end module

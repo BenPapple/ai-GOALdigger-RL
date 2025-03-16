@@ -1,0 +1,25 @@
+use "../../goaldiggerProlog" as knowledge.
+use "../../goaldiggerAction" as actionspec.
+
+/**
+ * Delete goalzone by message
+ *
+ */
+
+module handleMessageDeletedGoalZone {
+	
+	% ToDo: When the world measurement is ready, adapt coordinates additionaly to world size
+	
+	% Check received messageDeletedGoalzone messages.
+	forall (_).sent(messageDeletedGoalZone(X,Y,SenderName)) 
+		do {
+			if bel(confirmedOffsetOfAgent(OffsetX,OffsetY,SenderName), X1 is X + OffsetX, Y1 is Y + OffsetY, 
+			   mapGoalZone(X1,Y1,Md)) 
+			    then {
+			    if true then delete(mapGoalZone(X1,Y1,Md)).
+			    if not(bel(calculateNewGoalzoneMD)) 
+	        	    then insert(calculateNewGoalzoneMD).
+	        }
+	}
+		
+} % end module

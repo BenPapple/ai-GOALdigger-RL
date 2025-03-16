@@ -1,0 +1,65 @@
+use goaldiggerProlog as knowledge.
+use goaldiggerAction as actionspec.
+use "pathfinding/executeRandomMove" as module.
+use "./actionhandling/preActionCleanup" as module.
+use "./rolehandling/executeDefaultRole" as module.
+use "./rolehandling/executeWorkerRole" as module.
+use "./rolehandling/executeSaboteurRole" as module.
+use "./rolehandling/executeExplorerRole" as module.
+use "./normhandling/executeRoleNormsPrevention" as module.
+use "./normhandling/executeBlockNormsPrevention" as module.
+use "./blockhandling/attachBlocksLyingAround" as module.
+
+exit=never.
+
+/**
+ * Main decision rules for every step server sends
+ *
+ * @author Ben G.
+ */
+
+module goaldiggerMain {
+
+	% Server sends new percept and Event sets haveMove(false) and now agent action strategy can continue
+    if not(bel(haveMove)),
+       percept(requestAction)
+    	then {
+
+    	% handle deactivated by skip
+    	if percept(deactivated(true))
+            then preActionCleanup + skip. 
+      
+        % prevent norm damage when norm active    
+        if bel(activateNormHandling) 
+            then executeBlockNormsPrevention. 
+        if bel(activateNormHandling) 
+            then executeRoleNormsPrevention. 
+
+    	% agents want to be free randomExploreMove for turn number skipThisStep
+    	if percept(step(SimStep)), bel(skipThisStep(SkipStep), SimStep =< SkipStep)
+            then executeRandomMove.
+
+%    	% Handle saboteur role
+%    	if bel(activateSaboteurFeature, customRole(customRoleSaboteur)), 
+%    	   percept(role(digger))
+%            then executeSaboteurRole.
+
+    	% Handle blaster role
+    	if bel(activateSaboteurFeature, customRole(customRoleSaboteur)) 
+            then executeSaboteurRole.
+
+	    % Handle DEFAULT role
+    	if percept(role(default))
+            then executeDefaultRole.
+
+	    % Handle WORKER role
+    	if percept(role(worker))
+            then executeWorkerRole.
+
+    	% Handle explorer role
+    	if percept(role(explorer))
+            then executeExplorerRole.
+
+    } % if haveMove
+    
+} % module

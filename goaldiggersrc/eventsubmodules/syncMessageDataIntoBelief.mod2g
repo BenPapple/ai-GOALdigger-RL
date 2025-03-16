@@ -1,0 +1,73 @@
+use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
+
+/**
+ * Store (or delete if messages get old) messages from percept into belief
+ *
+ * @author Ben G.
+ */
+
+module syncMessageDataIntoBelief {	
+
+	% STORE seenOtherAgent messages
+	forall percept(step(SimStep)),
+	       (_).sent(seenOtherAgentAt(OwnX, OwnY, OtherX, OtherY, Step, AgentSender)),
+	       bel(Step =< SimStep)
+		do {
+			if not(bel(cachedSeenOtherAgentAt(OwnX, OwnY, OtherX, OtherY, Step, AgentSender)))
+				then insert(cachedSeenOtherAgentAt(OwnX, OwnY, OtherX, OtherY, Step, AgentSender)). 
+		
+	}
+	
+	% DELETE stored seenOtherAgent messages from belief when ~5 steps old
+	forall bel(cachedSeenOtherAgentAt(OwnX, OwnY, OtherX, OtherY, Step, AgentSender)), 
+	       percept(step(SimStep))
+		do {
+			if bel(OlderThan is SimStep - 5, Step < OlderThan),
+			   bel(cachedSeenOtherAgentAt(OwnX, OwnY, OtherX, OtherY, Step, AgentSender))
+				then delete(cachedSeenOtherAgentAt(OwnX, OwnY, OtherX, OtherY, Step, AgentSender)).
+	}
+	
+	% STORE myOffsetOfOtherAgent messages
+	forall percept(step(SimStep)),
+	       (_).sent(myOffsetOfOtherAgent(KnownSenderName, OffsetToSenderX, OffsetToSenderY, UnknownAgentName, Step)),
+	       bel(Step =< SimStep) 
+		do {
+			if not(bel(confirmedOffsetOfAgent(_, _, KnownSenderName))),
+			   not(bel(confirmedOffsetOfAgent(_, _, UnknownAgentName))),
+			   not(bel(cachedMyOffsetOfOtherAgent(KnownSenderName, OffsetToSenderX, OffsetToSenderY, UnknownAgentName, 
+			                                       Step)))
+				then insert(cachedMyOffsetOfOtherAgent(KnownSenderName, OffsetToSenderX, OffsetToSenderY, 
+													   UnknownAgentName, Step)). 
+	}	
+	
+	% DELETE stored myOffsetOfOtherAgent messages from belief when offset known
+	forall bel(cachedMyOffsetOfOtherAgent(KnownSenderName, OffsetToSenderX, OffsetToSenderY, UnknownAgentName, Step))
+		do {
+			if percept(step(SimStep), Step =< SimStep),
+			   bel(confirmedOffsetOfAgent(_, _, UnknownAgentName))
+				then delete(cachedMyOffsetOfOtherAgent(KnownSenderName, OffsetToSenderX, OffsetToSenderY, 
+				                                              UnknownAgentName, Step)).
+	}	
+		
+	% CREATE belief about status messages
+	forall (SenderConnect).sent(otherAgentStatus(SenderName, X, Y, MsgStep, Seed, Role, BlockTypeAttached, TaskRole)) 
+		do {
+	    	if not(bel(storedOtherAgentStatus(SenderName, _, _, _, _, _, _, _, _))) 
+	    		then insert(storedOtherAgentStatus(SenderName, MsgStep, Role, Seed, SenderConnect, 
+	    		                                   X, Y, BlockTypeAttached, TaskRole)).
+	}
+
+	    
+	% UPDATE belief about status messages
+	forall percept(step(SimStep)),
+	       (SenderConnect).sent(otherAgentStatus(SenderName, X, Y, MsgStep, Seed, Role, BlockTypeAttached, TaskRole)),
+	       bel(MsgStep =< SimStep)
+		do {
+	    	if bel(storedOtherAgentStatus(SenderName, OldMsgStep, V3, V4, V5, V6, V7, V8, V9), MsgStep > OldMsgStep) 
+	    		then delete(storedOtherAgentStatus(SenderName, OldMsgStep, V3, V4, V5, V6, V7, V8, V9)) + 
+	                 insert(storedOtherAgentStatus(SenderName, MsgStep, Role, Seed, SenderConnect, X, Y, 
+	                                               BlockTypeAttached, TaskRole)).
+	}
+	
+} % end module

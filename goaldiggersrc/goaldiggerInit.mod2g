@@ -1,0 +1,140 @@
+use goaldiggerProlog as knowledge.
+
+/**
+ * File initializes first knowledge into agent, gets executed once at agent launch
+ *
+ */
+
+module goaldiggerInit {
+	
+	% debug and custom competition rules
+	% Variable fuer Debug, zB elapseStepTime
+	%if true then insert (lDebugOn).
+	% activate simple logging 
+	%if true then insert (scoringBoardOn). 
+	% switch for misc debug prints
+	%if true then insert(printsAllowed).
+	% switch to deactivate because not allowed in competition1
+	if true then insert (activateDoubleSpeed). 
+	% switch that activates saboteur in sim
+	if true then insert (activateSaboteurFeature).
+	% variables for saboteur behaviour (against own team, against other team)
+	%if true then insert(sabotageUs).
+	if true then insert(sabotageThem).	
+	% switch for norm handling
+	if true then insert(activateNormHandling).
+	
+	% global values
+	% limits the tasks by remaining steps (Task1Limit,Task2Limit,Task3Limit,Task4Limit)
+    if true then insert(limitStepsTask(0, 60, 85, 95)).
+	% switch to recognize simulations have different characteristics on sim change
+	if true then insert(expectDifferentSimulations). 
+	% lowest and highest limit after which agent changes explore direction
+	if true then insert(limitChangeStepMinMax(10, 20)). 
+	% set step after which ACO exploring turns off
+	if true then insert(limitACOSteps(100)). 		
+	
+	% To count sim changes
+	if not(bel(simCount(_))) 
+		then insert(simCount(1)). 
+	if not(bel(countFailedTask(_, _))) 
+		then insert(countFailedTask(0, 0)). 
+	if not(bel(cachedCountFailedTask(_))) 
+		then insert(cachedCountFailedTask(0)).
+	if not(bel(count1Task(_, _))) 
+		then insert(count1Task(0, 0)). 
+	if not(bel(cachedCount1Task(_))) 
+		then insert(cachedCount1Task(0)).
+	if not(bel(count2Task(_, _))) 
+		then insert(count2Task(0, 0)). 
+	if not(bel(cachedCount2Task(_))) 
+		then insert(cachedCount2Task(0)). 
+	if not(bel(count3Task(_, _))) 
+		then insert(count3Task(0, 0)). 
+	if not(bel(cachedCount3Task(_))) 
+		then insert(cachedCount3Task(0)). 
+	if not(bel(count4Task(_, _))) 
+		then insert(count4Task(0, 0)). 
+	if not(bel(cachedCount4Task(_))) 
+		then insert(cachedCount4Task(0)).				
+    if true then insert(currentScore(0)).
+	if true then insert(thisIsTheFirstSim).
+	if true then insert(stopScoreLogging(0)).
+	if true then insert(stopDurationLogging(0)).	
+	if true then insert(simDuration(0)).
+	if true then insert(roleCount(0)).
+	
+	% machine learning
+	if true then insert(qtable(33,34,33,30,70,100)).
+	if true then insert(randomTaskChoser(0)).
+	
+	% switches
+	if true then insert (haveMove). % Semaphore of decision for step
+	if true then insert (haveBlockAttached(false, n)). % switch for carried blocks
+	if true then insert (haveDispenserDelivery(false, 0)). % switch for successful dispenser request
+	%if true then insert (getFree). % get free from attachments
+	
+	% Assign Explorer and set worker as default role
+	if true then insert(randomSeed(0)).
+	if true then insert (positionInHirarchie(0)).
+	if true then insert (targetRole(worker)).
+
+	% subscribing to message channels
+	if true then subscribe(channelGoalzone).
+	if true then subscribe(channelDispenser).
+	if true then subscribe(channelNamesRelativeXY).
+	if true then subscribe(channnelMultiTask).
+	
+	% dispenser targets
+	if true then insert (targetDispenserAt(70, 70, bx, 700)). % init with dummy values 
+	if true then insert (targetClosestOfAllDispensersAt(70, 70, bx, 700)). % init with dummy values 
+	
+	% goalzone targets
+	if true then insert (targetClosestGoalZone(111, 111, 123456)). % init with dummy values 
+	
+	% rolezone targets
+	if true then insert (targetClosestRoleZone(111, 111, 123456)). % init with dummy values 		
+	
+	% tasks
+	% filler task -11001001 so it gets replaced when real task available
+	if true then insert(currentChosenTask(taskx, -11001001, 999 , 0, 1, bx, needNewTask, needNewTask)).
+	
+	% track custom role of agent
+	if true then insert(currentCustomRoleStatus(basicAgent)).
+	
+	% multitask coordinator for submitterLeader, necessary for other agents for hooks in program logic
+	if true
+        then insert(multiTaskSupporterStatus(noTask, placeholder, placeholder, placeholder, placeholder, 
+                                             placeholder,placeholder, placeholder, placeholder, placeholder, 
+                                             placeholder,placeholder, placeholder, placeholder, placeholder, 
+                                             placeholder, placeholder, placeholder, placeholder)). 
+		
+	% manhattan distance
+	if true then insert (targetMd(-999, -999, placeholdertarget)). % init Manhatten Distance 
+	if true then insert (nMd(0)). % ManhattanDistance for field north of agent
+	if true then insert (sMd(0)). % ManhattanDistance for field south of agent
+	if true then insert (eMd(0)). % ManhattanDistance for field east of agent
+	if true then insert (wMd(0)). % ManhattanDistance for field west of agent
+
+	% misc
+	if true then insert ( step(-1)). % init server steps
+	if true then insert (agentAt(0, 0, 0)). % agent starting coordinate	
+	if true then insert(waitBeforeNewTask(0)).
+
+    if true then insert(lastDeactivationTracker(-10)).
+
+	if bel(randomDirection(X)) 
+		then insert (randomAffinity(X)). % random general direction to explore for agent
+	if bel(limitChangeStepMinMax(X, Y), randomBetween(X, Y, Out)) 
+		then insert (changeAffinityAfterTheseSteps(Out)). 
+	if true then insert(exploreDirection(n)). % init Explore Direction default is north
+
+	if true then insert (elapseStepTime(0)). % Time measurement between step
+	if true then insert (skipThisStep(-2)). % turns to skip with random explore move
+	
+	% variables for world size calculation
+	if true then insert ( worldSizeX(54321), worldSizeY(54321) ).
+	if true then insert ( worldListX([]), worldListY([]) ).
+	if true then insert ( messageProcessingDelay(4), messagePersitanceAfterDelay(1) ).
+	
+}

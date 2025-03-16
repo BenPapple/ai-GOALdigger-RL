@@ -1,0 +1,264 @@
+use goaldiggerProlog as knowledge.
+use goaldiggerAction as actionspec.
+use "./eventsubmodules/distancecalc/updateDispenserDistance" as module.
+use "./eventsubmodules/distancecalc/updateGoalzoneDistance" as module.
+use "./eventsubmodules/distancecalc/updateRolezoneDistance" as module.
+use "./eventsubmodules/debugtools/logMiniPercept" as module.
+use "./eventsubmodules/debugtools/logScoringBoard" as module.
+use "./eventsubmodules/syncLastActionResultDataIntoBelief" as module.
+use "./eventsubmodules/reinitBeliefOnSimChange" as module.
+use "./eventsubmodules/manageManhattanSwitchStatus" as module.
+use "./eventsubmodules/manageManhattanTarget" as module.
+use "./eventsubmodules/simpleworldcalculation/calculateWorldSize" as module.
+use "./eventsubmodules/updateAssignExplorerRole" as module.
+use "./eventsubmodules/syncPerceptDataIntoBelief" as module.
+use "./eventsubmodules/syncMessageDataIntoBelief" as module.
+use "./eventsubmodules/msgmultitaskcoordination/messageMultiTaskCoordination" as module.
+use "./eventsubmodules/simpleworldcalculation/updateWorldSizeData" as module.
+use "./eventsubmodules/messagePermaSendStatusToOthers" as module.
+use "./eventsubmodules/updateAgentHierarchy" as module.
+use "./eventsubmodules/updateAgentHierarchyEmergency" as module.
+use "./eventsubmodules/saboteurtools/initializeSaboteurBeliefs" as module.
+use "./eventsubmodules/saboteurtools/manageSaboteurEvents" as module.
+use "./eventsubmodules/sharedmap/handleMessageGoalZone" as module.
+use "./eventsubmodules/sharedmap/handleMessageRoleZone" as module.
+use "./eventsubmodules/sharedmap/handleMessageDeletedGoalZone" as module.
+use "./eventsubmodules/sharedmap/handleMessageDispenser" as module.
+use "./eventsubmodules/sharedmap/deleteAllRoleZones" as module.
+use "./eventsubmodules/simpleworldcalculation/handleMessageAgentOffset" as module.
+use "./eventsubmodules/updateMapExploredMarks" as module.
+use "./eventsubmodules/updateExploreMoveDirection" as module.
+use "./taskhandling/changeTaskCheck" as module.
+use "./taskhandling/manageCustomQtable" as module.
+use "./normhandling/analyzeNorms" as module.
+use "./blockhandling/dropOnDisappearedGZ" as module.
+
+/**
+ * Gets executed everytime a percept or message is received and handles them
+ *
+ * @author Ben G.
+ * @co-author Isaac S.
+ */
+
+module goaldiggerEvent {
+
+	% SUBMODULE reinitialize belief after simulation changes
+	if percept(step(0)),
+	   not(bel(thisIsTheFirstSim))
+	   	then reinitBeliefOnSimChange.
+
+	% prevent first reinitBeliefOnSimChange activation
+	if bel(thisIsTheFirstSim)
+		then delete(thisIsTheFirstSim).
+
+	% Logging made points by agents
+	if bel(scoringBoardOn)
+		then logScoringBoard.
+
+    % remove switch to drop all blocks
+    if bel(dropAllBlocks) 
+        then delete(dropAllBlocks).
+
+    % detect crash of MAS
+	if not(bel(simulationCrashed(_))),
+	   percept(step(SimStep), SimStep > 30),
+	   bel(randomSeed(0)),
+       percept(role(worker))
+	    then insert(simulationCrashed(SimStep)).
+
+    % reinit emergency hierarchy after crash
+    if bel(simulationCrashed(_))
+        then updateAgentHierarchyEmergency.
+
+    % reinit saboteur after client crash
+    if percept(role(digger), step(SimStep), SimStep > 30),
+       not(bel(customRole(customRoleSaboteur)))
+        then insert(customRole(customRoleSaboteur)).
+	% Initialize saboteur beliefs	
+	if bel(customRole(customRoleSaboteur)) 
+		then initializeSaboteurBeliefs.
+
+	% SUBMODULE managing success and partial_success percepts
+	if true then syncLastActionResultDataIntoBelief.
+
+	% SUBMODULE Store percept/message data in belief
+	if true then syncPerceptDataIntoBelief.
+	if true then syncMessageDataIntoBelief.
+
+    % check for drop connected block on disappeared goalzone
+    if bel(submitterLeader),
+       not(percept(goalZone(0, 0))),
+       bel(multiTaskSupporterStatus(_, _, _, _, _, _, Connect1, _, _, _, _, _, Connect2, 
+                                		_, _, _, _, _, Connect3)),
+       bel(Connect1 == connected; Connect2 == connected; Connect3 == connected)
+        then dropOnDisappearedGZ.
+
+	% check attached block direction for block and if none found switch haveBlockAttached false
+    if bel(haveBlockAttached(true, DirBlock), directionToCoordinate(DirBlock, X, Y)),
+       not(percept(attached(X, Y)))
+        then delete(haveBlockAttached(true, DirBlock)) +
+             insert(haveBlockAttached(false, DirBlock)).
+
+	% SUBMODULES Choose RandomAgent for Explorer
+	if percept(step(SimStep), SimStep >= 6)
+		then updateAgentHierarchy.
+	if true then updateAssignExplorerRole.
+
+	% SUBMODULE SimpleWorldcalculation
+	if true then handleMessageAgentOffset.
+	% add agentAtComplexWorld, mapDispenserComplexWorld, otherAgentAtComplexWorld (bel)
+	if percept(step(123456)) then updateWorldSizeData.
+	% ToDo Marco integrate with explorer to calculate worldsize
+	if percept(step(12345)) then calculateWorldSize.
+
+    % update current task for saboteur before messagePermaSendStatusToOthers
+    if bel(customRole(customRoleSaboteur)),
+       bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8))
+        then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) +
+             insert(currentChosenTask(taskSaboteur, -1, 100, 0, 0, bx, sabotaging, nameX)).
+
+	% SUBMODULE Permanently send message to other agents with own status and on conditional greetings
+	if true then messagePermaSendStatusToOthers.
+
+	% SUBMODULE check messages about dispensers if none known
+	if percept(step(SimStep), SimStep >= 2) 
+	    then handleMessageDispenser.
+
+	% SUBMODULE update dispenser map data as worker with no block and as worker with no active task
+	if bel(calculateNewDispenserMD, haveBlockAttached(false, _)),
+	   percept(role(worker))
+	   	then updateDispenserDistance.
+
+	% SUBMODULE manage saboteur-specific events
+	if bel(customRole(customRoleSaboteur))
+	  then manageSaboteurEvents.
+
+    % as submitterLeader calculate q-table
+    if bel(submitterLeader) then manageCustomQtable.
+
+    % SUBMODULE chose new task if necessary
+    if not(bel(customRole(customRoleSaboteur))) then changeTaskCheck.
+
+	% SUBMODULE managing messages concerning task coordination
+	if percept(step(SimStep), SimStep >= 2) 
+	    then messageMultiTaskCoordination.
+
+	% SUBMODULE check messages about role zones
+	%if percept(role(default)) then handleMessageRoleZone.
+	if percept(step(SimStep), SimStep >= 2) 
+	    then handleMessageRoleZone.
+
+    % delete rolezones
+    if percept(step(SimStep), SimStep > 30),
+       bel(mapRoleZone(_, _, _))
+        then deleteAllRoleZones.
+
+    % delete rolezones
+    if percept(step(SimStep), SimStep > 30),
+       bel(cachedMsgRoleZoneData(_,_,_))
+        then deleteAllRoleZones.
+
+    % SUBMODULE update rolezone map data
+    if percept(role(default))
+    	then updateRolezoneDistance.
+
+	% SUBMODULE check messages about goal zones
+	if percept(step(SimStep), SimStep >= 2) 
+	    then handleMessageGoalZone.
+
+	% SUBMODULE delete goal zones if other agents have found that they don't exist anymore
+	if percept(step(SimStep), SimStep > 5),
+	   (_).sent(messageDeletedGoalZone(_,_,_))
+	   	then handleMessageDeletedGoalZone.
+
+	% SUBMODULE update goalzone map data
+	if percept(step(SimStep),role(worker)),
+	   bel(calculateNewGoalzoneMD, haveBlockAttached(true, _), 
+	       currentChosenTask(_, TaskStep, _, _, _, _,ClientServer,_), TaskStep >= SimStep),
+	   bel(ClientServer == submittingAgentOneTask; ClientServer == submittingAgentTwoTask; 
+	       ClientServer == submittingAgentThreeTask; ClientServer == submittingAgentFourTask)
+	    then updateGoalzoneDistance.
+
+	% SUBMODULE manhattan switch manipulation
+	if true then manageManhattanSwitchStatus.
+
+	% SUBMODULE manhattan target manipulation
+	if true
+		then manageManhattanTarget.
+
+%    % check norms for possible damage to agents
+    if bel(activateNormHandling)
+        then analyzeNorms.
+
+	/**
+	 * MISC SWITCH MANIPULATION
+	 *
+	 */
+
+	% check old dispenser request and set switch to false
+	if percept(step(Step)),
+	   bel(haveDispenserDelivery(true, OnStepX), OnStepX + 1 =< Step)
+	    then delete(haveDispenserDelivery(true, OnStepX)) +
+	         insert(haveDispenserDelivery(false, Step)).
+
+	/**
+	 * MISCELLANEOUS POST EVERYTHING
+	 *
+	 */
+
+	% change affinity direction after X steps
+	if bel(changeAffinityAfterTheseSteps(ChangeStep)),
+	   percept(step(X), X >= 2, 0 =:= mod(X, ChangeStep)),
+	   bel(randomAffinity(DirOld), randomGoForwardDirection(DirOld, NewDir))
+	    then delete(randomAffinity(DirOld)) +
+	         insert(randomAffinity(NewDir)).
+
+	% remove switch
+	if bel(calculateNewDispenserMD)
+		then delete(calculateNewDispenserMD).
+	if bel(calculateNewGoalzoneMD)
+		then delete(calculateNewGoalzoneMD).
+
+    % ACO explore 
+    if bel(limitACOSteps(ACOLimit)),
+       percept(step(SimStep), SimStep > 2, SimStep < ACOLimit) then {
+		if true then updateMapExploredMarks.
+	
+		%If not know goalzone or dispenser, exploreMap
+		if not(bel(executeManhattan)) then updateExploreMoveDirection.
+	}
+	
+	% keep track when last deactivated
+	if percept(deactivated(true), step(SimStep)),
+	   bel(lastDeactivationTracker(OldStep))
+		then delete(lastDeactivationTracker(OldStep)) +
+		     insert(lastDeactivationTracker(SimStep)).
+	
+	% delete all explore marks after they are not necessary anymore 
+    if bel(limitACOSteps(ACOLimit)),
+       bel(DeleteStep is ACOLimit + 1),
+       percept(step(SimStep), SimStep == DeleteStep)       
+        then {
+		forall bel(mapMarkExplored(ExploredX,ExploredY)) 
+		    do delete(mapMarkExplored(ExploredX,ExploredY)).		
+	}
+
+	% SUBMODULE debug with our mini percept
+	if bel(lDebugOn)
+		then logMiniPercept.
+
+	/**
+	 * ACTIVATE MAIN LOOP
+	 *
+	 */
+
+	% prepare action chosing in main module
+	if bel(haveMove),
+	   percept(step(SimStep), SimStep >= 0),
+	   percept(steps(MaxStep), EndStep is MaxStep, SimStep < EndStep)
+	   	then delete(haveMove).
+	
+	/* Ablauf in der Simulation verlangsamen - auskommentieren für Turniere und Contest*/   	
+	%if true then sleep(500). 
+
+} % module

@@ -1,0 +1,26 @@
+use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
+use "../actionhandling/preActionCleanup" as module.
+use "../pathfinding/executeManhattanMove" as module.
+use "../pathfinding/executeRandomMove" as module.
+use "../pathfinding/helperMoveWithoutBlock" as module.
+
+/**
+ * Main decision rules for role explorer
+ *
+ */
+
+module executeExplorerRole {
+	    
+	    % explore
+	    if percept(thing(0,0, Type, _), Type == marker)
+			then executeRandomMove.
+	    
+    	% Explorer map until one Dispenser and one goalZone is known
+		if bel(exploreDirection(Dir), randomAffinity(Dir2)) 
+			then { 
+				if bel(Dir == r) then executeRandomMove.
+				if true then delete(randomAffinity(Dir2)) + insert(randomAffinity(Dir)) + helperMoveWithoutBlock.	
+			}
+	
+}

@@ -1,0 +1,209 @@
+use "../goaldiggerProlog" as knowledge.
+
+/**
+ * Remove and restore init values when entering a new simulation
+ *
+ * @author Ben G.
+ */
+
+module reinitBeliefOnSimChange {
+
+	% To count sim changes
+	%if not(bel(simCount(_))) then insert(simCount(0)). 
+	if bel(simCount(SimCount), NewSimCount is SimCount + 1) 
+		then delete(simCount(SimCount)) + 
+		     insert(simCount(NewSimCount)). 
+
+	if bel(countFailedTask(NumFailedTask, V2)) 
+		then delete(countFailedTask(NumFailedTask, V2)) + 
+		     insert(countFailedTask(0, 0)).
+
+	if bel(count1Task(Num1Task, V2)) 
+		then delete(count1Task(Num1Task, V2)) + 
+		     insert(count1Task(0, 0)).
+	
+	if bel(count2Task(Num2Task, V2)) 
+		then delete(count2Task(Num2Task, V2)) + 
+		     insert(count2Task(0, 0)).
+		     
+	if bel(count3Task(Num3Task, V2)) 
+		then delete(count3Task(Num3Task, V2)) + 
+		     insert(count3Task(0, 0)).		     
+
+	if bel(count4Task(Num4Task, V2)) 
+		then delete(count4Task(Num4Task, V2)) + 
+		     insert(count4Task(0, 0)).
+
+	if bel(cachedCount1Task(Num1Task)) 
+		then delete(cachedCount1Task(Num1Task)) + 
+		     insert(cachedCount1Task(0)).
+	
+	if bel(cachedCount2Task(Num2Task)) 
+		then delete(cachedCount2Task(Num2Task)) + 
+		     insert(cachedCount2Task(0)).
+		     
+	if bel(cachedCount3Task(Num3Task)) 
+		then delete(cachedCount3Task(Num3Task)) + 
+		     insert(cachedCount3Task(0)).		     
+
+	if bel(cachedCount4Task(Num4Task)) 
+		then delete(cachedCount4Task(Num4Task)) + 
+		     insert(cachedCount4Task(0)).
+
+	if bel(cachedCountFailedTask(NumFailedTask)) 
+		then delete(cachedCountFailedTask(NumFailedTask)) + 
+		     insert(cachedCountFailedTask(0)).
+		     
+	if bel(currentScore(Del)) 
+	    then delete(currentScore(Del)) + insert(currentScore(0)).	     
+
+	% restore initial belief
+	if bel(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) 
+		then delete(currentChosenTask(V1, V2, V3, V4, V5, V6, V7, V8)) + 
+		     insert(currentChosenTask(task0, -11001001, 999 , 0, 1, bx, needNewTask, needNewTask)).
+
+    % reset random seed
+    if bel(randomSeed(MyRandomSeed)) 
+		then delete(randomSeed(MyRandomSeed)) + 
+			 insert (randomSeed(0)).
+    
+    % prevent crash handling in new sim
+    if bel(simulationCrashed(SimStep))
+        then delete(simulationCrashed(SimStep)).
+
+    % delete submitterLeader switch
+    if bel(submitterLeader) 
+		then delete(submitterLeader).
+
+    % track custom role of agent
+	if bel(currentCustomRoleStatus(Delete)) then delete(currentCustomRoleStatus(Delete)) + 
+	                                             insert(currentCustomRoleStatus(basicAgent)).
+	                                             
+	if bel(agentAt(V1, V2, V3)) 
+		then delete(agentAt(V1, V2, V3)) + 
+		     insert(agentAt(0, 0, 0)).
+	if bel(executeManhattan) 
+		then delete(executeManhattan).
+	if not(bel(haveMove)) 
+		then insert(haveMove).
+		
+   	% multitask coordinator for submitterLeader, necessary for other agents for hooks in program logic
+	if bel(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17, W18,
+	                                W19))
+     then delete(multiTaskSupporterStatus(W1, W2, W3, W4, W5, W6, W7, W8, W9, W10, W11, W12, W13, W14, W15, W16, W17,
+                                          W18, W19)) + 
+          insert(multiTaskSupporterStatus(noTask, placeholder, placeholder, placeholder, placeholder, 
+                                          placeholder,placeholder, placeholder, placeholder, placeholder, 
+                                          placeholder,placeholder, placeholder, placeholder, placeholder, 
+                                          placeholder, placeholder,  placeholder, placeholder)). 
+
+	% machine learning
+	if bel(qtable(V1,V2,V3,V4,V5,V6)) 
+	    then delete(qtable(V1,V2,V3,V4,V5,V6)) + insert(qtable(33,34,33,30,70,100)).
+	
+	if bel(haveBlockAttached(X, Y)) 
+		then delete(haveBlockAttached(X, Y)) + 
+			 insert (haveBlockAttached(false, n)). % switch for carried blocks
+	if bel(haveDispenserDelivery(X, Y)) 
+		then delete(haveDispenserDelivery(X, Y)) + 
+			 insert (haveDispenserDelivery(false, 0)). % switch for successful dispenser request
+	
+	if true then subscribe(channelGoalzone).
+	if true then subscribe(channelDispenser).
+	if true then subscribe (channelNamesRelativeXY).
+	
+	if bel(exploreDirection(Dir)) then delete(exploreDirection(Dir)) + insert(exploreDirection(n)).
+	
+	%reset assign Role
+	if bel(positionInHirarchie(Position)) 
+		then delete(positionInHirarchie(Position)) + 
+		     insert(positionInHirarchie(0)).     
+	
+	if bel(customRole(customRoleSaboteur))
+	    then delete(customRole(customRoleSaboteur)).
+	
+	if bel(targetRole(Role)) 
+		then delete(targetRole(Role)) + 
+		     insert (targetRole(worker)).
+	
+	if bel(targetDispenserAt(X, Y, Z, A)) 
+		then delete(targetDispenserAt(X, Y, Z, A)) + 
+		     insert (targetDispenserAt(70, 70, bx, 700)). % init with dummy values 
+	if bel(targetClosestOfAllDispensersAt(X, Y, Z, A)) 
+		then delete(targetClosestOfAllDispensersAt(X, Y, Z, A)) + 
+		     insert (targetClosestOfAllDispensersAt(70, 70, bx, 700)). % init with dummy values 
+	
+	
+	% goalzone targets
+	if bel(targetClosestGoalZone(X, Y, Z)) 
+		then delete(targetClosestGoalZone(X, Y, Z)) + 
+		     insert (targetClosestGoalZone(111, 111, 123456)). % init with dummy values 
+	
+	% rolezone targets
+	if bel(targetClosestRoleZone(X, Y, Z)) 
+		then delete(targetClosestRoleZone(X, Y, Z)) + 
+		     insert (targetClosestRoleZone(111, 111, 123456)). % init with dummy values 	
+	
+	if bel(targetMd(X, Y, Z)) 
+		then delete(targetMd(X, Y, Z)) + 
+			 insert (targetMd(-999, -999, placeholdertarget)). % init Manhatten Distance 
+	
+	if bel(skipThisStep(X)) 
+		then delete(skipThisStep(X)) + 
+			 insert (skipThisStep(-2)). % turns to skip with random explore move
+	
+	% on switch delete custom belief data belonging to old simulation
+	if bel(expectDifferentSimulations) 
+		then {
+			forall bel(mapDispenser(V1, V2, V3, V4, V5, V6)) 
+				do delete(mapDispenser(V1, V2, V3, V4, V5, V6)).
+			forall bel(mapGoalZone(V1, V2, V3)) 
+				do delete(mapGoalZone(V1, V2, V3)).
+			forall bel(mapRoleZone(V1, V2, V3)) 
+				do delete(mapRoleZone(V1, V2, V3)).
+			
+			forall bel(storedOtherAgentStatus(V1, V2, V3, V4, V5, V6, V7, V8, V9)) 
+				do delete(storedOtherAgentStatus(V1, V2, V3, V4, V5, V6, V7, V8, V9)).
+			forall bel(confirmedOffsetOfAgent(V1, V2, V3)) 
+				do delete(confirmedOffsetOfAgent(V1, V2, V3)).
+		    forall bel(cachedSeenOtherAgentAt(V1, V2, V3, V4, V5, V6)) 
+		    	do delete(cachedSeenOtherAgentAt(V1, V2, V3, V4, V5, V6)).
+		    forall bel(cachedMyOffsetOfOtherAgent(KnownSenderName, OffsetToSenderX, OffsetToSenderY, UnknownAgentName, 
+		               Step)) 
+		        do delete(cachedMyOffsetOfOtherAgent(KnownSenderName, OffsetToSenderX, OffsetToSenderY, 
+		        		  UnknownAgentName, Step)).
+		        		  
+		    forall bel(mapMarkExplored(X, Y)) do delete(mapMarkExplored(X, Y)).
+		    
+		    forall bel(cachedMsgRoleZoneData(X,Y,SenderName)) 
+		        do delete(cachedMsgRoleZoneData(X,Y,SenderName)).
+		    forall bel(cachedMsgDispenserData(X,Y,dispenser,BlockType,Bool,SenderName)) 
+		        do delete(cachedMsgDispenserData(X,Y,dispenser,BlockType,Bool,SenderName)).
+		    forall bel(cachedMsgGoalZoneData(X,Y,SenderName)) 
+		        do delete(cachedMsgGoalZoneData(X,Y,SenderName)).
+
+	}
+	
+	% reinit saboteur-specific beliefs
+	if bel(emptyGoalZoneCounter(_,_,_))
+	  then {
+	  	forall bel(emptyGoalZoneCounter(A,B,C))
+	  	  do delete(emptyGoalZoneCounter(A,B,C)).
+	  }
+	
+	if bel(goalZoneSightings(_,_,_,_,_)) 
+	   then {
+	      forall bel(goalZoneSightings(A,B,C,D,E))
+	        do delete(goalZoneSightings(A,B,C,D,E)).
+	   }
+	 
+	if bel(bodyCounter(A))
+	  then delete(bodyCounter(A)).
+	  
+	if bel(agentSighting(_,_,_,_,_,_,_,_))
+	  then {
+	    forall bel(agentSighting(A,B,C,D,E,F,G,H))
+	       do delete(agentSighting(A,B,C,D,E,F,G,H)).
+	   }
+	
+} % end module

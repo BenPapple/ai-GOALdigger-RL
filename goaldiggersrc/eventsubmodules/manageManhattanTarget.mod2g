@@ -1,0 +1,271 @@
+use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
+use "../pathfinding/helperManhattanCalc" as module.
+use "../eventsubmodules/distancecalc/updateGoalzoneDistance" as module.
+use "../eventsubmodules/saboteurtools/manageSaboteurManhattanTarget" as module.
+
+/**
+ * Manages Manhattan targets
+ *
+ * @author Ben G.
+ * @co-author Isaac S.
+ */
+ 
+module manageManhattanTarget {
+
+	% update rolezone target MD
+	if percept(role(default)), 
+	   bel(targetMd(X, Y, Target), targetClosestRoleZone(A, B, MdAlt), MdAlt < 1234567)
+		then delete(targetMd(X, Y, Target)) + 
+		     insert(targetMd(A, B, rolezone)) + 
+		     insert(executeManhattan).	
+
+	
+	% when role default store first seen RoleZone coordinates as targetMd
+	if percept(roleZone(X, Y), role(default)), 
+	   bel(agentAt(X2, Y2, _), targetMd(X4, Y4, Target), localize(X, Y, X2, Y2, X3, Y3)) 
+	    then delete(targetMd(X4, Y4, Target)) + 
+	    	 insert(targetMd(X3, Y3, rolezone)) + 
+	    	 insert(executeManhattan).
+		
+	% when role worker and without block set dispenser as target
+	if percept(step(SimStep), role(worker)), 
+	   bel(haveBlockAttached(false,_), currentChosenTask(_, TaskStep, _, _, _, BlockType, _, _), TaskStep >= SimStep, 
+		   targetDispenserAt(AltX, AltY, AltBlockType, _), BlockType == AltBlockType) 
+		   	then {		
+				if bel(targetMd(X4, Y4, Target)) 
+					then delete(targetMd(X4, Y4, Target)) + 
+				         insert(targetMd(AltX, AltY, dispenser)).	
+				if not(bel(executeManhattan)) 
+					then insert(executeManhattan).
+	}
+
+    % Manhattan targets for custom role saboteur
+	if bel(customRole(customRoleSaboteur)) 
+		then manageSaboteurManhattanTarget.
+	         
+	
+	% With block and as submittingAgent update goalzone target MD
+	if bel(haveBlockAttached(true, _), step(SimStep), currentChosenTask(_, TaskStep, _, _, _, _, OneOrTwoTask, _), 
+	       TaskStep >= SimStep, targetMd(X, Y, Target), targetClosestGoalZone(A, B, MdAlt), MdAlt < 1234567),
+	   bel(OneOrTwoTask == submittingAgentTwoTask; OneOrTwoTask == submittingAgentOneTask; 
+	       OneOrTwoTask == submittingAgentThreeTask; OneOrTwoTask == submittingAgentFourTask)
+		then delete(targetMd(X, Y, Target)) + 
+			 insert(targetMd(A, B, goalzone)) + 
+			 insert(executeManhattan).
+		
+	% target goalzone from percept as submitter
+	if bel(haveBlockAttached(true,_), currentChosenTask(_, TaskStep, _, _, _, _, OneOrTwoTask, _), 
+	       agentAt(AgentX, AgentY, _)), 
+	   percept(step(SimStep), role(worker), goalZone(GoalX, GoalY)),
+	   bel(TaskStep >= SimStep, AltX is GoalX + AgentX, AltY is GoalY + AgentY),
+	   bel(OneOrTwoTask == submittingAgentTwoTask; OneOrTwoTask == submittingAgentOneTask; 
+	       OneOrTwoTask == submittingAgentThreeTask; OneOrTwoTask == submittingAgentFourTask)
+	    then {		
+			if bel(targetMd(X4, Y4, Target)) 
+				then delete(targetMd(X4, Y4, Target)) + 
+				     insert(targetMd(AltX, AltY, goalzone)).	
+			if not(bel(executeManhattan)) 
+				then insert(executeManhattan).
+	}
+
+	% target supporting position if own block can immediately be delivered
+	if bel(haveBlockAttached(true, _), step(SimStep), 
+	       currentChosenTask(_, TaskStep, _, XTask, YTask, _,supportingAgent, NameSubmitter), TaskStep >= SimStep, 
+	       confirmedOffsetOfAgent(OffsetX, OffsetY, NameSubmitter),
+		   targetMd(X, Y, Target)),
+	   bel(checkBlockPosition(XTask, YTask, Result), Result == alwaysDeliver),
+	   bel(storedOtherAgentStatus(NameSubmitter, _, worker, _, _, A, B, _, _)), 
+	   bel(localize(A, B, OffsetX, OffsetY, C, D), C2 is C + XTask, D2 is D + YTask + 1 )
+		then delete(targetMd(X, Y, Target)) + 
+			 insert(targetMd(C2, D2, supportingPosition)) + 
+			 insert(executeManhattan).
+
+%	% target supporting position if on 0 row and block above own block is attached
+%	if bel(haveBlockAttached(true, _), step(SimStep), 
+%	       currentChosenTask(_, TaskStep, _, 0, YTask, _,supportingAgent, NameSubmitter), YTask > 1, 
+%	                         TaskStep >= SimStep, 
+%	                         confirmedOffsetOfAgent(OffsetX, OffsetY, NameSubmitter),
+%		                     targetMd(X, Y, Target)),
+%	   bel(storedOtherAgentStatus(NameSubmitter, _, worker, _, _, A, B, _, _)), 
+%	   bel(localize(A, B, OffsetX, OffsetY, C, D), C2 is C + 0, D2 is D + YTask + 1 ),
+%	   bel(agentAt(_, MyYOff, _)),
+%	   bel(AboveBlockY is D2 - MyYOff + YTask - 1),
+%	   percept(thing(0, 4, block, _)),
+%	   percept(attached(0, 4))
+%		then delete(targetMd(X, Y, Target)) + 
+%			 insert(targetMd(C2, D2, supportingPosition)) + 
+%			 insert(executeManhattan).
+	
+	% all multitasks target waiting position for supporting action 
+	if bel(haveBlockAttached(true, _), step(SimStep), 
+	       currentChosenTask(_, TaskStep, _, XTask, YTask, _,supportingAgent, NameSubmitter), TaskStep >= SimStep, 
+	       confirmedOffsetOfAgent(OffsetX, OffsetY, NameSubmitter),
+		   targetMd(X, Y, Target)),
+	   bel(checkBlockPosition(XTask, YTask, Result), Result == wait),
+	   bel(storedOtherAgentStatus(NameSubmitter, _, worker, _, _, A, B, _, _)), 
+	   bel(localize(A, B, OffsetX, OffsetY, C, D), C2 is C + XTask, D2 is D + YTask + 3 )
+		then delete(targetMd(X, Y, Target)) + 
+			 insert(targetMd(C2, D2, waitingPosition)) + 
+			 insert(executeManhattan).	 
+
+	% 3task target supporting position if west of Y column and attached block on right of target block position
+	if bel(haveBlockAttached(true, _), step(SimStep), 
+	       currentChosenTask(TaskName, TaskStep, _, XTask, YTask, _,supportingAgent, NameSubmitter), YTask > 1, XTask < 0,
+	                         TaskStep >= SimStep, 
+	                         confirmedOffsetOfAgent(OffsetX, OffsetY, NameSubmitter),
+		                     targetMd(X, Y, Target)),
+	   percept(task(TaskName,_, 90,[req(ReqX1,ReqY1,_),req(ReqX2,ReqY2,_),req(ReqX3,ReqY3,_)])),
+	   bel(CheckY is YTask - 1),
+	   not(bel(ReqX1 == XTask, ReqY1 == CheckY)),
+	   not(bel(ReqX2 == XTask, ReqY2 == CheckY)),
+	   not(bel(ReqX3 == XTask, ReqY3 == CheckY)),	       
+	   bel(checkBlockPosition(XTask, YTask, Result), Result == wait),
+	   bel(storedOtherAgentStatus(NameSubmitter, _, worker, _, _, A, B, _, _)), 
+	   bel(localize(A, B, OffsetX, OffsetY, C, D), C2 is C + XTask, D2 is D + YTask + 1 ),
+	   bel(agentAt(_, MyYOff, _)),
+	   bel(AboveBlockY is D2 - MyYOff - 1),
+	   percept(thing(1, AboveBlockY, block, _)),
+	   percept(attached(1, AboveBlockY))
+		then delete(targetMd(X, Y, Target)) + 
+			 insert(targetMd(C2, D2, supportingPosition)) + 
+			 insert(executeManhattan).
+
+	% 3task target supporting position if east of Y column and attached block on left of target block position
+	if bel(haveBlockAttached(true, _), step(SimStep), 
+	       currentChosenTask(TaskName, TaskStep, _, XTask, YTask, _,supportingAgent, NameSubmitter), YTask > 1, XTask > 0,
+	                         TaskStep >= SimStep, 
+	                         confirmedOffsetOfAgent(OffsetX, OffsetY, NameSubmitter),
+		                     targetMd(X, Y, Target)),
+	   percept(task(TaskName,_, 90,[req(ReqX1,ReqY1,_),req(ReqX2,ReqY2,_),req(ReqX3,ReqY3,_)])),
+	   bel(CheckY is YTask - 1),
+	   not(bel(ReqX1 == XTask, ReqY1 == CheckY)),
+	   not(bel(ReqX2 == XTask, ReqY2 == CheckY)),
+	   not(bel(ReqX3 == XTask, ReqY3 == CheckY)),
+	   bel(checkBlockPosition(XTask, YTask, Result), Result == wait),
+	   bel(storedOtherAgentStatus(NameSubmitter, _, worker, _, _, A, B, _, _)), 
+	   bel(localize(A, B, OffsetX, OffsetY, C, D), C2 is C + XTask, D2 is D + YTask + 1 ),
+	   bel(agentAt(_, MyYOff, _)),
+	   bel(AboveBlockY is D2 - MyYOff - 1),
+	   percept(thing(-1, AboveBlockY, block, _)),
+	   percept(attached(-1, AboveBlockY))
+		then delete(targetMd(X, Y, Target)) + 
+			 insert(targetMd(C2, D2, supportingPosition)) + 
+			 insert(executeManhattan).
+			 
+	% 4tasktarget supporting position if west of Y column and attached block on right of target block position
+	if bel(haveBlockAttached(true, _), step(SimStep), 
+	       currentChosenTask(TaskName, TaskStep, _, XTask, YTask, _,supportingAgent, NameSubmitter), YTask > 1, XTask < 0,
+	                         TaskStep >= SimStep, 
+	                         confirmedOffsetOfAgent(OffsetX, OffsetY, NameSubmitter),
+		                     targetMd(X, Y, Target)),
+	   percept(task(TaskName,_, 160,[req(ReqX1,ReqY1,_),req(ReqX2,ReqY2,_),req(ReqX3,ReqY3,_),req(ReqX4,ReqY4,_)])),
+	   bel(CheckY is YTask - 1),
+	   not(bel(ReqX1 == XTask, ReqY1 == CheckY)),
+	   not(bel(ReqX2 == XTask, ReqY2 == CheckY)),
+	   not(bel(ReqX3 == XTask, ReqY3 == CheckY)),
+	   not(bel(ReqX4 == XTask, ReqY4 == CheckY)),		       
+	   bel(checkBlockPosition(XTask, YTask, Result), Result == wait),
+	   bel(storedOtherAgentStatus(NameSubmitter, _, worker, _, _, A, B, _, _)), 
+	   bel(localize(A, B, OffsetX, OffsetY, C, D), C2 is C + XTask, D2 is D + YTask + 1 ),
+	   bel(agentAt(_, MyYOff, _)),
+	   bel(AboveBlockY is D2 - MyYOff - 1),
+	   percept(thing(1, AboveBlockY, block, _)),
+	   percept(attached(1, AboveBlockY))
+		then delete(targetMd(X, Y, Target)) + 
+			 insert(targetMd(C2, D2, supportingPosition)) + 
+			 insert(executeManhattan).
+
+	% 4tasktarget supporting position if east of Y column and attached block on left of target block position
+	if bel(haveBlockAttached(true, _), step(SimStep), 
+	       currentChosenTask(TaskName, TaskStep, _, XTask, YTask, _,supportingAgent, NameSubmitter), YTask > 1, XTask > 0,
+	                         TaskStep >= SimStep, 
+	                         confirmedOffsetOfAgent(OffsetX, OffsetY, NameSubmitter),
+		                     targetMd(X, Y, Target)),
+	   percept(task(TaskName,_, 160,[req(ReqX1,ReqY1,_),req(ReqX2,ReqY2,_),req(ReqX3,ReqY3,_),req(ReqX4,ReqY4,_)])),
+	   bel(CheckY is YTask - 1),
+	   not(bel(ReqX1 == XTask, ReqY1 == CheckY)),
+	   not(bel(ReqX2 == XTask, ReqY2 == CheckY)),
+	   not(bel(ReqX3 == XTask, ReqY3 == CheckY)),
+	   not(bel(ReqX4 == XTask, ReqY4 == CheckY)),
+	   bel(checkBlockPosition(XTask, YTask, Result), Result == wait),
+	   bel(storedOtherAgentStatus(NameSubmitter, _, worker, _, _, A, B, _, _)), 
+	   bel(localize(A, B, OffsetX, OffsetY, C, D), C2 is C + XTask, D2 is D + YTask + 1 ),
+	   bel(agentAt(_, MyYOff, _)),
+	   bel(AboveBlockY is D2 - MyYOff - 1),
+	   percept(thing(-1, AboveBlockY, block, _)),
+	   percept(attached(-1, AboveBlockY))
+		then delete(targetMd(X, Y, Target)) + 
+			 insert(targetMd(C2, D2, supportingPosition)) + 
+			 insert(executeManhattan).
+
+	% all multitasks target supporting position if on X row and block above own block is attached
+	if bel(haveBlockAttached(true, _), step(SimStep), 
+	       currentChosenTask(_, TaskStep, _, XTask, YTask, _,supportingAgent, NameSubmitter), YTask > 1,
+	                         TaskStep >= SimStep, 
+	                         confirmedOffsetOfAgent(OffsetX, OffsetY, NameSubmitter),
+		                     targetMd(X, Y, Target)),
+	   bel(checkBlockPosition(XTask, YTask, Result), Result == wait),
+	   bel(storedOtherAgentStatus(NameSubmitter, _, worker, _, _, A, B, _, _)), 
+	   bel(localize(A, B, OffsetX, OffsetY, C, D), C2 is C + XTask, D2 is D + YTask + 1 ),
+	   bel(agentAt(_, MyYOff, _)),
+	   bel(AboveBlockY is D2 - MyYOff - 2),
+	   percept(thing(0, AboveBlockY, block, _)),
+	   percept(attached(0, AboveBlockY))
+		then delete(targetMd(X, Y, Target)) + 
+			 insert(targetMd(C2, D2, supportingPosition)) + 
+			 insert(executeManhattan).
+	
+%	% Moving around 2-task Submitting agent for docking sequence
+%	if percept(team(Team), thing(XSubmit, YSubmit, entity, Team), goalZone(XSubmit, YSubmit), XBlock is XSubmit,
+%	           YBlock is YSubmit+1, thing(XBlock, YBlock, block, SouthBlock), 
+%	           XPlusY is abs(XSubmit) + abs(YSubmit), XPlusY \= 0, attached(XBlock, YBlock)),
+%	   bel(haveBlockAttached(true, _)) 
+%	   	then {
+%			if bel(agentAt(Xself, Yself, _), currentChosenTask(TaskName, _, _, XTask, YTask, _, supportingAgent, 
+%			       SubmitterName)),
+%			   bel(storedOtherAgentStatus(SubmitterName, _, _, _, _, XSub, YSub, SubmitterBlockTypeAttached, _), 
+%			       SubmitterBlockTypeAttached == SouthBlock),
+%			   bel(confirmedOffsetOfAgent(OffsetX, OffsetY, SubmitterName)),
+%			   bel(SubMdX is XSub + OffsetX, SubMdY is YSub + OffsetY),
+%			   bel(agentAt(MyX, MyY, _)),
+%			   bel(calculateXYMd(MyX, MyY, SubMdX, SubMdY, NewMD), NewMD < 6),
+%			   bel(DiffX is SubMdX - MyX + XSubmit, DiffY is SubMdY - MyY + YSubmit),
+%			   bel(DiffX =< 1, DiffY =< 1),
+%			   percept(task(TaskName, _, 40,[req(_, _, _),req(_, _, _)])),
+%			   bel(Xtarget is Xself + XSubmit + XTask + 0, Ytarget is Yself + YSubmit + YTask + 1, 
+%			       targetMd(Xdel, Ydel, Zdel))
+%			    then delete(targetMd(Xdel, Ydel, Zdel)) + 
+%			    	 insert(targetMd(Xtarget, Ytarget, supportingPosition)) + 
+%			         insert(executeManhattan).
+%	}
+%	
+%	% Moving around 3-task Submitting agent for docking sequence
+%	if percept(team(Team), thing(XSubmit, YSubmit, entity, Team), goalZone(XSubmit, YSubmit), XBlock is XSubmit,
+%	           YBlock is YSubmit+1, thing(XBlock, YBlock, block, SouthBlock), 
+%	           XPlusY is abs(XSubmit) + abs(YSubmit), XPlusY \= 0, attached(XBlock, YBlock)),
+%	   bel(haveBlockAttached(true, _)) 
+%	   	then {
+%			if bel(agentAt(Xself, Yself, _), currentChosenTask(TaskName, _, _, XTask, YTask, _, supportingAgent, 
+%			       SubmitterName)),
+%			   bel(storedOtherAgentStatus(SubmitterName, _, _, _, _, XSub, YSub, SubmitterBlockTypeAttached, _), 
+%			       SubmitterBlockTypeAttached == SouthBlock),
+%			   bel(confirmedOffsetOfAgent(OffsetX, OffsetY, SubmitterName)),
+%			   bel(SubMdX is XSub + OffsetX, SubMdY is YSub + OffsetY),
+%			   bel(agentAt(MyX, MyY, _)),
+%			   bel(calculateXYMd(MyX, MyY, SubMdX, SubMdY, NewMD), NewMD < 6),
+%			   bel(DiffX is SubMdX - MyX + XSubmit, DiffY is SubMdY - MyY + YSubmit),
+%			   bel(DiffX =< 1, DiffY =< 1),
+%			   percept(task(TaskName, _, 90,[req(_, _, _),req(_, _, _),req(_, _, _)])),
+%			   bel(Xtarget is Xself + XSubmit + XTask + 0, Ytarget is Yself + YSubmit + YTask + 1, 
+%			       targetMd(Xdel, Ydel, Zdel))
+%			    then delete(targetMd(Xdel, Ydel, Zdel)) + 
+%			    	 insert(targetMd(Xtarget, Ytarget, supportingPosition)) + 
+%			         insert(executeManhattan).
+%	}
+%	
+	% Manhattan Magic calculate nswe
+	if bel(executeManhattan) 
+		then helperManhattanCalc.	
+		
+} % end module

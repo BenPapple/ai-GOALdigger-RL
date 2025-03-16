@@ -1,0 +1,122 @@
+use "../../goaldiggerProlog" as knowledge.
+
+/**
+ * Coordinate messages between agents about relative coordinates
+ *
+ * @author Isaac S.
+ */
+
+module handleMessageAgentOffset {
+
+    % delete last sim survived messages
+    forall percept(step(SimStep)), bel(cachedSeenOtherAgentAt(V1, V2, V3, V4, MsgStep, V6), MsgStep > SimStep) 
+        do {
+        	if bel(cachedSeenOtherAgentAt(V1, V2, V3, V4, MsgStep, V6))
+            	then delete(cachedSeenOtherAgentAt(V1, V2, V3, V4, MsgStep, V6)).
+    }
+
+    % on switch send calculated offset to other agents
+    if bel(calculatedNewOffset) 
+    	then {
+    		forall bel(confirmedOffsetOfAgent(OffsetX, OffsetY, AgentNameSender)), 
+    		       percept(name(MyName), step(SimStep)) 
+        		do allother.send(myOffsetOfOtherAgent(MyName, OffsetX, OffsetY, AgentNameSender, SimStep)).
+    }
+    
+    % reset switch for offset send
+    if bel(calculatedNewOffset) 
+    	then delete(calculatedNewOffset).
+
+	% evaluate seenOtherAgentAt messages for offset concerning duplicate senders and cached messages older than 4 steps
+	forall percept(name(AgentReceiver)), 
+	       bel(cachedSeenOtherAgentAt(OwnX, OwnY, OtherX, OtherY, Step, AgentReceiver)) 
+		do {
+	    	if percept(step(SimStep)),
+	    	   bel(CalcStep is SimStep - 5, Step == CalcStep), 
+               not(bel(cachedSeenOtherAgentAt(_, _, OtherX, OtherY, Step, AgentNameSender2), 
+	               AgentReceiver \== AgentNameSender2))
+		    	then {
+					% if only 1x inverse coordinates are found
+					if bel(cachedSeenOtherAgentAt(SenderX, SenderY, OtherX1, OtherY1, Step, AgentNameSender)),					   
+					   bel(OtherXNegative is  -1 * OtherX1, OtherYNegative is  -1 * OtherY1),
+					   bel(AgentReceiver \= AgentNameSender, OtherX == OtherXNegative, OtherY == OtherYNegative) 
+					    then {
+							if not(bel(cachedSeenOtherAgentAt( _, _, OtherX1, OtherY1, Step, AgentNameSender3), 
+						                AgentNameSender \== AgentNameSender3)) 
+						    	then {
+									% calculate offset
+									if true then {
+								 	   if bel(calculateAgentOffset(OwnX, OwnY, SenderX, SenderY, OtherX, OtherY, 
+								 		        OffsetX, OffsetY)),
+								 		    bel(confirmedOffsetOfAgent(OffOldX, OffOldY, AgentNameSender)) 
+										     then
+										     delete(confirmedOffsetOfAgent(OffOldX, OffOldY, AgentNameSender)) + 
+										     insert(confirmedOffsetOfAgent(OffsetX, OffsetY, AgentNameSender)) .
+								 		if bel(calculateAgentOffset(OwnX, OwnY, SenderX, SenderY, OtherX, OtherY, 
+								 		       OffsetX, OffsetY)),
+								 		   not(bel(confirmedOffsetOfAgent(_, _, AgentNameSender)))
+									 		then insert(confirmedOffsetOfAgent(OffsetX, OffsetY, AgentNameSender)) +
+									      		 insert(calculatedNewOffset).							      
+							}
+					}
+			}
+		}
+	} % do
+
+    % ToDo Marco integrate with explorer to find worldsize	
+	% update offset when already known, hack when worldsize not known for shorter routing
+%	forall percept(name(AgentReceiver)), 
+%	       bel(cachedSeenOtherAgentAt(OwnX, OwnY, OtherX, OtherY, Step, AgentReceiver)) 
+%		do {
+%	    	if percept(step(SimStep), Step =< SimStep -4), 
+%               not(bel(cachedSeenOtherAgentAt(_, _, OtherX, OtherY, Step, AgentNameSender2), 
+%	               AgentReceiver \== AgentNameSender2))
+%		    	then {
+%					% if only 1x inverse coordinates are found
+%					if bel(cachedSeenOtherAgentAt(SenderX, SenderY, OtherX1, OtherY1, Step, AgentNameSender)),
+%					   bel(confirmedOffsetOfAgent(_, _, AgentNameSender)),
+%					   bel(OtherXNegative is  -1 * OtherX1, OtherYNegative is  -1 * OtherY1),
+%					   bel(AgentReceiver \= AgentNameSender, OtherX == OtherXNegative, OtherY == OtherYNegative) 
+%					    then {
+%							if not(bel(cachedSeenOtherAgentAt( _, _, OtherX1, OtherY1, Step, AgentNameSender3), 
+%						                AgentNameSender \== AgentNameSender3)) 
+%						    	then {
+%									% calculate offset
+%									if true then {
+%								 		if bel(calculateAgentOffset(OwnX, OwnY, SenderX, SenderY, OtherX, OtherY, 
+%								 		       OffsetX, OffsetY)),
+%								 		   bel(confirmedOffsetOfAgent(DelX, DelY, AgentNameSender))
+%									 		then delete(confirmedOffsetOfAgent(DelX, DelY, AgentNameSender)) +
+%									 		     insert(confirmedOffsetOfAgent(OffsetX, OffsetY, AgentNameSender)).
+%			                }
+%					}
+%			}
+%		}
+%	} % do
+
+    % CALCULATE offset of 3rd agent from message from 2nd agent
+	forall (_).sent(myOffsetOfOtherAgent(KnownSenderName, OffsetToSenderX, OffsetToSenderY, UnknownAgentName, Step)) 
+		do {
+			if percept(name(MyName), step(SimStep), Step =< SimStep),
+			   bel(UnknownAgentName \= MyName),
+			   bel(confirmedOffsetOfAgent(OffsetX, OffsetY, KnownSenderName)), 
+			   not(bel(confirmedOffsetOfAgent(_, _, UnknownAgentName))),
+			   bel(X1 is OffsetX + OffsetToSenderX, 
+			       Y1 is OffsetY + OffsetToSenderY)
+			   	then insert(confirmedOffsetOfAgent(X1, Y1, UnknownAgentName)).				
+	}
+	
+	% CALCULATE offset of 3rd agent from cached message from 2nd agent
+	forall percept(step(SimStep)),
+	       bel(cachedMyOffsetOfOtherAgent(KnownSenderName, OffsetToSenderX, OffsetToSenderY, UnknownAgentName, Step),
+	           Step =< SimStep) 
+		do {
+			if percept(name(MyName)),
+			   bel(UnknownAgentName \= MyName),
+			   bel(confirmedOffsetOfAgent(OffsetX, OffsetY, KnownSenderName)), 
+			   not(bel(confirmedOffsetOfAgent(_, _, UnknownAgentName))),
+			   bel(X1 is OffsetX + OffsetToSenderX, Y1 is OffsetY + OffsetToSenderY)
+			       then insert(confirmedOffsetOfAgent(X1, Y1, UnknownAgentName)).				
+	}
+	
+} % end module

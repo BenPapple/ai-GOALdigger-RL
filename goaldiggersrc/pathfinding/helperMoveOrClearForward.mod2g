@@ -1,0 +1,98 @@
+use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
+use "../actionhandling/preActionCleanup" as module.
+
+% random choice between equal values requires random; linearrandom: first action choice linear, then inside curly 
+% brackets random action
+order = linearrandom.  
+
+/**
+ * handle moving affinity forward and clear block if necessary
+ *
+ * @author Ben G.
+ * @co-author Marco G.
+ */
+
+module helperMoveOrClearForward {
+
+    % Move into main affinity direction if possible
+    if bel(activateDoubleSpeed, randomAffinity(Dir), directionToCoordinate(Dir, Xn, Yn), haveBlockAttached(false, _)), 
+       percept(role(worker)), 
+       not(percept(thing(Xn, Yn, Type,_), Type \== dispenser, Type \== marker)), 
+       not(percept( thing(Xn+Xn, Yn+Yn, Type2,_), Type2 \== dispenser, Type \== marker)) 
+        then preActionCleanup + move(Dir, Dir).
+        
+	if bel(activateDoubleSpeed, randomAffinity(Dir), directionToCoordinate(Dir, Xn, Yn), haveBlockAttached(false, _)), 
+       percept(role(worker)), 
+       not(percept(thing(0, 0, Type3, _), Type3 == marker)),
+       percept(thing(Xn, Yn, Type, _), Type == marker), 
+       percept(thing(Xn+Xn, Yn+Yn, Type2, _), Type2 == marker) 
+        then preActionCleanup + skip.
+        
+   	if bel(activateDoubleSpeed, randomAffinity(Dir), directionToCoordinate(Dir, Xn, Yn), haveBlockAttached(false, _)), 
+       percept(role(worker)), 
+       not(percept(thing(0, 0, Type3, _), Type3 == marker)),
+       percept(thing(Xn+Xn, Yn+Yn, Type2, _), Type2 == marker) 
+        then preActionCleanup + skip.
+        
+    if bel(activateDoubleSpeed, randomAffinity(Dir), directionToCoordinate(Dir, Xn, Yn), haveBlockAttached(false, _)), 
+       percept(role(worker)), 
+       not(percept(thing(Xn, Yn, Type, _), Type \== dispenser, Type \== marker)), 
+       not(percept( thing(Xn+Xn, Yn+Yn, Type2, _), Type \== dispenser, Type2 \== marker)) 
+        then preActionCleanup + move(Dir, Dir).
+        
+    % normal speed
+    if bel(randomAffinity(Dir), directionToCoordinate(Dir, Xn, Yn)), 
+       not(percept(thing(Xn, Yn, Type,_), Type \== dispenser, Type \== marker)) 
+        then preActionCleanup + move(Dir).
+        
+   	if bel(randomAffinity(Dir), directionToCoordinate(Dir, Xn, Yn)), 
+       percept(role(worker)), 
+       not(percept(thing(0, 0, marker, _))),
+       percept(thing(Xn, Yn, Type, _), Type == marker)
+        then preActionCleanup + skip.
+    
+    if bel(randomAffinity(Dir), directionToCoordinate(Dir, Xn, Yn)), 
+       not(percept(thing(Xn, Yn, Type,_), Type \== dispenser, Type \== marker)) 
+        then preActionCleanup + move(Dir).
+    	
+    % clear main affinity direction of obstacles and blocks
+    if bel(randomAffinity(Dir), directionToCoordinate(Dir, Xn, Yn)), 
+       percept(thing(Xn, Yn, obstacle,_)) 
+        then preActionCleanup + clear(Xn, Yn).
+    if bel(randomAffinity(Dir), directionToCoordinate(Dir, Xn, Yn)), 
+       percept(thing(Xn, Yn, block,_)), 
+       not(percept(attached(Xn, Yn))) 
+        then preActionCleanup + clear(Xn, Yn).
+    
+    % clear if altmove blocked
+    if bel(randomAffinity(Diry), directionToCoordinate(Diry, Xn, Yn), random90Direction(Diry, AltMove)) 
+    	then {
+    		if bel( directionToCoordinate(AltMove, Xm, Ym)), 
+    		   percept(thing(Xm, Ym, Type,_), Type \== dispenser, Type \== marker) 
+    		   	then {
+    		if percept(thing(Xn, Yn, obstacle,_))  
+				then preActionCleanup + clear(Xn, Yn).
+    		if percept(thing(Xn, Yn, block,_)), 
+    		   not(percept(attached(Xn, Yn)))   
+    		   	then preActionCleanup + clear(Xn, Yn).
+		}
+    }
+    
+    if bel(randomAffinity(Diry), directionToCoordinate(Diry, Xn, Yn), random90Direction(Diry, AltMove)) 
+    	then {
+    		if bel( directionToCoordinate(AltMove, Xm, Ym)), 
+    		   percept(thing(Xm, Ym, Type,_), Type \== marker) 
+    		   	then {
+    		if percept(thing(Xn, Yn, obstacle,_))  
+				then preActionCleanup + clear(Xn, Yn).
+    		if percept(thing(Xn, Yn, block,_)), 
+    		   not(percept(attached(Xn, Yn)))   
+    		   	then preActionCleanup + clear(Xn, Yn).
+		}
+    }
+    
+    %If something applies where no rules are declared agent should skip his action, better than no_action
+    if true then preActionCleanup + skip.
+    
+} % end module
