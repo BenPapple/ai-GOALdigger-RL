@@ -37,6 +37,9 @@
 % switch for norm handling
 :- dynamic activateNormHandling/0.
 
+% switches for task choosing
+:- dynamic choiceRandom/0.
+
 % when a marked is north of agent.
 :- dynamic northExplored/0.
 % when a marked is south of agent.

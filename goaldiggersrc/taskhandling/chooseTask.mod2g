@@ -7,6 +7,7 @@ use "../taskhandling/taskHandlingFourBlock" as module.
 use "../taskhandling/preferTwoTask" as module.
 use "../taskhandling/preferThreeTask" as module.
 use "../taskhandling/preferFourTask" as module.
+use "../choicehandling/randomChoice" as module.
 
 /**
  * Choose task from options when having corresponding role; waterfall chosing, advanced choices come first in file: 
@@ -81,20 +82,7 @@ module chooseTask {
        bel(submitterLeader) 
         then taskHandlingOneBlock.
 
-    % ML task chosing		
-	if bel(submitterLeader),
-	   bel(waitBeforeNewTask(0)),
-	   bel(mapGoalZone(_,_,_)),
-	   bel(randomBetween(0, 100, RandOut)),
-	   bel(qtable(V1,V2,_,_,_,_))
-	    then {
-	    if bel(currentChosenTask(_, _, _, _, _, _, needNewTask, needNewTask)),
-	       bel(RandOut =< V1) then preferTwoTask.
-	    if  bel(currentChosenTask(_, _, _, _, _, _, needNewTask, needNewTask)),
-	        bel(Q2 is  V1 + V2),
-	        bel(RandOut =< Q2) then preferThreeTask.
-	    if bel(currentChosenTask(_, _, _, _, _, _, needNewTask, needNewTask)) 
-	        then preferFourTask.	    
-	}
+    % use different task choosing algorithms		
+	if bel(choiceRandom) then randomChoice.
 		
 } % module

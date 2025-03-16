@@ -1,0 +1,31 @@
+use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
+use "../taskhandling/preferTwoTask" as module.
+use "../taskhandling/preferThreeTask" as module.
+use "../taskhandling/preferFourTask" as module.
+
+/**
+ * Choose task randomly
+ *
+ * @author Ben G.
+ */
+
+module randomChoice {
+	
+	% ML task chosing		
+	if bel(submitterLeader),
+	   bel(waitBeforeNewTask(0)),
+	   bel(mapGoalZone(_,_,_)),
+	   bel(randomBetween(0, 101, RandOut)),
+	   bel(qtable(V1,V2,_,_,_,_))
+	    then {
+	    if bel(currentChosenTask(_, _, _, _, _, _, needNewTask, needNewTask)),
+	       bel(RandOut =< V1) then preferTwoTask.
+	    if  bel(currentChosenTask(_, _, _, _, _, _, needNewTask, needNewTask)),
+	        bel(Q2 is  V1 + V2),
+	        bel(RandOut =< Q2) then preferThreeTask.
+	    if bel(currentChosenTask(_, _, _, _, _, _, needNewTask, needNewTask)) 
+	        then preferFourTask.	    
+	}
+	
+}

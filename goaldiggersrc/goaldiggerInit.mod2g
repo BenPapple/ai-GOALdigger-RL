@@ -23,6 +23,8 @@ module goaldiggerInit {
 	if true then insert(sabotageThem).	
 	% switch for norm handling
 	if true then insert(activateNormHandling).
+	% switch for task chooser choiceRandom/choiceMinimum/choiceMaximum/choiceQL
+	if true then insert(choiceRandom).
 	
 	% global values
 	% limits the tasks by remaining steps (Task1Limit,Task2Limit,Task3Limit,Task4Limit)
