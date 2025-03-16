@@ -3,6 +3,7 @@ use "../goaldiggerAction" as actionspec.
 use "../taskhandling/taskHandlingOneBlock" as module.
 use "../choicehandling/randomChoice" as module.
 use "../choicehandling/minimumChoice" as module.
+use "../choicehandling/maximumChoice" as module.
 
 /**
  * Choose task from options when having corresponding role; waterfall chosing, advanced choices come first in file: 
@@ -80,5 +81,6 @@ module chooseTask {
     % use different task choosing algorithms		
 	if bel(choiceRandom) then randomChoice.
 	if bel(choiceMinimum) then minimumChoice.
+	if bel(choiceMaximum) then maximumChoice.
 		
 } % module

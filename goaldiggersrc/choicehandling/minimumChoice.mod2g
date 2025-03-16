@@ -1,4 +1,5 @@
 use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
 use "../taskhandling/preferTwoTask" as module.
 
 /**

@@ -40,6 +40,7 @@
 % switches for task choosing
 :- dynamic choiceRandom/0.
 :- dynamic choiceMinimum/0.
+:- dynamic choiceMaximum/0.
 
 % when a marked is north of agent.
 :- dynamic northExplored/0.

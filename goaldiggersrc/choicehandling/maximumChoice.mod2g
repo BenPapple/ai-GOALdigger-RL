@@ -1,0 +1,16 @@
+use "../goaldiggerProlog" as knowledge.
+use "../goaldiggerAction" as actionspec.
+use "../taskhandling/preferFourTask" as module.
+
+/**
+ * Picks a fitting task with the highest reward from the available tasks.
+ *
+ * @author Ben G.
+ */
+
+module maximumChoice {
+
+    % prefer highert tasks	
+    if true then preferFourTask. 		
+	
+}
