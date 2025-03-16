@@ -1,13 +1,8 @@
 use "../goaldiggerProlog" as knowledge.
 use "../goaldiggerAction" as actionspec.
 use "../taskhandling/taskHandlingOneBlock" as module.
-use "../taskhandling/taskHandlingTwoBlock" as module.
-use "../taskhandling/taskHandlingThreeBlock" as module.
-use "../taskhandling/taskHandlingFourBlock" as module.
-use "../taskhandling/preferTwoTask" as module.
-use "../taskhandling/preferThreeTask" as module.
-use "../taskhandling/preferFourTask" as module.
 use "../choicehandling/randomChoice" as module.
+use "../choicehandling/minimumChoice" as module.
 
 /**
  * Choose task from options when having corresponding role; waterfall chosing, advanced choices come first in file: 
@@ -84,5 +79,6 @@ module chooseTask {
 
     % use different task choosing algorithms		
 	if bel(choiceRandom) then randomChoice.
+	if bel(choiceMinimum) then minimumChoice.
 		
 } % module

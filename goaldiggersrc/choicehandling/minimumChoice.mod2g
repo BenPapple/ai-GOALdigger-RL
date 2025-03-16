@@ -1,0 +1,15 @@
+use "../goaldiggerProlog" as knowledge.
+use "../taskhandling/preferTwoTask" as module.
+
+/**
+ * Picks a fitting task with the smallest reward from the available tasks.
+ *
+ * @author Ben G.
+ */
+
+module minimumChoice {
+
+    % prefer highert tasks	
+    if true then preferTwoTask. 		
+	
+}
